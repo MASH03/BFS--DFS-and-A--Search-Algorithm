@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Algorithms Visualizer | BFS, DFS & A*</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-badge">AI</div>
+        <div>
+          <h1>Search Algorithms Visualizer</h1>
+          <p class="subtitle">Interactive exploration of BFS, DFS, and A* Pathfinding</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="mode-tabs">
+        <button id="tab-grid" class="tab-btn active" onclick="switchView('grid')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          2D Grid Labyrinth
+        </button>
+        <button id="tab-graph" class="tab-btn" onclick="switchView('graph')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="18" cy="18" r="3"></circle><circle cx="18" cy="6" r="3"></circle><line x1="8.5" y1="7.5" x2="15.5" y2="16.5"></line><line x1="8.5" y1="6" x2="15" y2="6"></line></svg>
+          Romania Roadmap Graph
+        </button>
+      </nav>
+    </header>
+
+    <!-- Main Toolbar -->
+    <section class="toolbar-section">
+      <div class="controls-group">
+        <!-- Algorithm Selector -->
+        <div class="control-item">
+          <label for="algo-select">Algorithm</label>
+          <select id="algo-select" class="custom-select">
+            <option value="astar">A* Search (Heuristic f = g + h)</option>
+            <option value="bfs">Breadth-First Search (BFS)</option>
+            <option value="dfs">Depth-First Search (DFS)</option>
+            <option value="compare">⚡ Side-by-Side Comparison (All 3)</option>
+          </select>
+        </div>
+
+        <!-- Animation Speed -->
+        <div class="control-item">
+          <label for="speed-slider">Speed: <span id="speed-label">Fast</span></label>
+          <input type="range" id="speed-slider" min="1" max="5" value="4" class="custom-slider">
+        </div>
+
+        <!-- Grid-specific actions -->
+        <div id="grid-controls" class="buttons-group">
+          <button id="btn-run" class="btn btn-primary" onclick="runAlgorithm()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Visualize Search
+          </button>
+          <button class="btn btn-secondary" onclick="generateMaze()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"></path><path d="M9 4v16"></path><path d="M14 4v16"></path><path d="M4 9h16"></path><path d="M4 14h16"></path></svg>
+            Generate Maze
+          </button>
+          <button class="btn btn-outline" onclick="clearPath()">Clear Path</button>
+          <button class="btn btn-outline" onclick="clearBoard()">Reset Board</button>
+        </div>
+
+        <!-- Graph-specific actions -->
+        <div id="graph-controls" class="buttons-group" style="display: none;">
+          <div class="city-selectors">
+            <div class="control-item-inline">
+              <label for="start-city">Start:</label>
+              <select id="start-city" class="custom-select-small"></select>
+            </div>
+            <div class="control-item-inline">
+              <label for="goal-city">Goal:</label>
+              <select id="goal-city" class="custom-select-small"></select>
+            </div>
+          </div>
+          <button id="btn-run-graph" class="btn btn-primary" onclick="runGraphAlgorithm()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Run Route Search
+          </button>
+          <button class="btn btn-secondary" onclick="compareGraphAll()">
+            Compare All 3
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Legend Bar -->
+    <div class="legend-bar">
+      <div class="legend-item"><span class="legend-badge start-badge"></span> Start Node</div>
+      <div class="legend-item"><span class="legend-badge goal-badge"></span> Goal Node</div>
+      <div class="legend-item"><span class="legend-badge wall-badge"></span> Wall / Obstacle (Click & drag to draw)</div>
+      <div class="legend-item"><span class="legend-badge visited-badge"></span> Visited / Explored</div>
+      <div class="legend-item"><span class="legend-badge path-badge"></span> Final Optimal Path</div>
+    </div>
+
+    <!-- Live Metric Dashboard -->
+    <section class="metrics-dashboard">
+      <div class="metric-card">
+        <span class="metric-label">STATUS</span>
+        <span id="stat-status" class="metric-value status-idle">Ready</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">PATH COST / STEPS</span>
+        <span id="stat-cost" class="metric-value">--</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">NODES EXPLORED</span>
+        <span id="stat-explored" class="metric-value">--</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">COMPUTATION TIME</span>
+        <span id="stat-time" class="metric-value">--</span>
+      </div>
+    </section>
+
+    <!-- Dynamic Viewport Area -->
+    <main class="viewport-area">
+      <!-- VIEW 1: 2D Grid Labyrinth -->
+      <div id="view-grid" class="view-panel active">
+        <div class="grid-wrapper">
+          <div id="grid-board" class="grid-board"></div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: Romania Roadmap Graph -->
+      <div id="view-graph" class="view-panel" style="display: none;">
+        <div class="graph-wrapper">
+          <svg id="graph-svg" viewBox="0 0 950 620" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </div>
+    </main>
+
+    <!-- Comparison Results Modal / Section -->
+    <section id="comparison-section" class="comparison-section" style="display: none;">
+      <div class="comparison-card">
+        <div class="comparison-header">
+          <h3>⚡ Side-by-Side Algorithm Comparison</h3>
+          <button class="close-btn" onclick="closeComparison()">✕</button>
+        </div>
+        <div class="table-responsive">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Algorithm</th>
+                <th>Path Found</th>
+                <th>Path Cost</th>
+                <th>Nodes Explored</th>
+                <th>Execution Time</th>
+                <th>Strategy</th>
+              </tr>
+            </thead>
+            <tbody id="comparison-tbody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+        <div id="comparison-summary" class="comparison-summary-note"></div>
+      </div>
+    </section>
+
+    <!-- Algorithm Theory Drawer / Explanations -->
+    <footer class="info-footer">
+      <div class="info-card">
+        <h4>Breadth-First Search (BFS)</h4>
+        <p>Uses a <strong>FIFO Queue</strong>. Traverses node-by-node layer by layer. Guarantees finding the path with the minimum number of edge hops (optimal for unweighted graphs).</p>
+      </div>
+      <div class="info-card">
+        <h4>Depth-First Search (DFS)</h4>
+        <p>Uses a <strong>LIFO Stack</strong>. Dives deeply along each branch until a dead-end before backtracking. Fast and memory-lean on deep graphs, but rarely yields optimal paths.</p>
+      </div>
+      <div class="info-card">
+        <h4>A* Search (A-Star)</h4>
+        <p>Uses a <strong>Priority Queue</strong> evaluated by <code>f(n) = g(n) + h(n)</code>. Combines past cost <code>g(n)</code> with heuristic estimate <code>h(n)</code> to guarantee finding the optimal lowest-cost path with minimal node expansions.</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
